@@ -3,8 +3,6 @@
 import asyncio
 import base64
 import json
-import websockets
-import sounddevice as sd
 from services.gemini_client import start_live_session
 
 async def handle_twilio_media(websocket):
