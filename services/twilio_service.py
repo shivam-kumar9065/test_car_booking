@@ -23,4 +23,4 @@ def initiate_call(to_number: str):
         url=f"{PUBLIC_URL}/voice"  # Twilio hits this route to get TwiML
     )
 
-    return call
+    return call.sid
