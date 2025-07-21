@@ -48,7 +48,7 @@ async def voice():
 @app.websocket("/twilio-audio")
 async def twilio_audio_stream(websocket: WebSocket):
     await websocket.accept()
-    await handle_twilio_media_stream(websocket)
+    await handle_twilio_media(websocket)
 
 # Run the FastAPI app
 if __name__ == "__main__":
