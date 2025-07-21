@@ -5,7 +5,7 @@ from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from twilio.twiml.voice_response import VoiceResponse, Start, Stream
-from services.media_stream_handler import handle_twilio_media_stream
+from services.media_stream_handler import handle_twilio_media
 from services.twilio_service import initiate_call
 
 app = FastAPI()
