@@ -36,7 +36,7 @@ async def voice():
     response.say("Connecting you to the car service assistant.", voice="Polly.Joanna")
 
     stream = Start().stream(
-        url="wss://your-domain.com/twilio-audio",  # <== use your WebSocket route here
+        url="wss://testcarbooking-env.up.railway.app/twilio-audio",  # <== use your WebSocket route here
         track="inbound_track"
     )
     response.append(stream)
