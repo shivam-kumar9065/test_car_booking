@@ -59,11 +59,11 @@ async def voice():
     response = VoiceResponse()
     response.say("Connecting you to the car service assistant.", voice="Polly.Joanna")
 
-    # stream = Start().stream(
-    #     url="wss://testcarbooking-env.up.railway.app/twilio-audio",
-    #     track="inbound_track"
-    # )
-    <Stream track="inbound_track" url="wss://testcarbooking-env.up.railway.app/twilio-audio" statusCallbackEvent="start error end" statusCallback="https://yourserver.com/twilio-callback" />
+    stream = Start().stream(
+        url="wss://testcarbooking-env.up.railway.app/twilio-audio",
+        track="inbound_track"
+    )
+    #<Stream track="inbound_track" url="wss://testcarbooking-env.up.railway.app/twilio-audio" statusCallbackEvent="start error end" statusCallback="https://yourserver.com/twilio-callback" />
     print("➡️ Adding Stream tag")
     response.append(stream)
 
