@@ -21,6 +21,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/")
+async def root():
+    return {"message": "🚗 Car Service Voice Agent is running!"}
+
+
 # ✅ Route: Start Twilio call via API
 @app.post("/call")
 async def call_customer(request: Request):
