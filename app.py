@@ -39,20 +39,38 @@ async def call_customer(request: Request):
     return {"status": "Call initiated", "sid": result.sid}
 
 # ✅ Route: Twilio webhook to respond with <Start><Stream>
+# @app.post("/voice")
+# async def voice():
+#     response = VoiceResponse()
+#     response.say("Connecting you to the car service assistant.", voice="Polly.Joanna")
+
+#     stream = Start().stream(
+#         url="wss://testcarbooking-env.up.railway.app/twilio-audio",  # <== use your WebSocket route here
+#         track="inbound_track"
+#     )
+#     print("Going to websocket")
+#     response.append(stream)
+#     print("Going to websocket__1")
+
+#     return Response(content=str(response), media_type="application/xml")
+
 @app.post("/voice")
 async def voice():
     response = VoiceResponse()
     response.say("Connecting you to the car service assistant.", voice="Polly.Joanna")
 
     stream = Start().stream(
-        url="wss://testcarbooking-env.up.railway.app/twilio-audio",  # <== use your WebSocket route here
+        url="wss://testcarbooking-env.up.railway.app/twilio-audio",
         track="inbound_track"
     )
-    print("Going to websocket")
+    print("➡️ Adding Stream tag")
     response.append(stream)
-    print("Going to websocket__1")
 
-    return Response(content=str(response), media_type="application/xml")
+    xml_str = str(response)
+    print("🛰️ XML sent to Twilio:\n", xml_str)
+
+    return Response(content=xml_str, media_type="application/xml")
+
 
 
 # # ✅ WebSocket route for real-time audio from Twilio
