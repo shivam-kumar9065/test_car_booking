@@ -109,23 +109,27 @@
 
 
 
-
 # app.py
 
 import uvicorn
 import os
-import logging # Import the logging module
+import logging
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from twilio.twiml.voice_response import VoiceResponse, Start, Stream
-from services.media_stream_handler import handle_twilio_media
-from services.twilio_service import initiate_call # Assuming this exists and works
-from utils.google_credentials import setup_google_credentials_from_env # Assuming this exists and works
+import json # Added for simplified handle_twilio_media
+import asyncio # Added for simplified handle_twilio_media
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-# For more detailed WebSocket debugging, you might set level=logging.DEBUG temporarily
+# Temporarily comment out or remove this line to use the simplified handler below
+# from services.media_stream_handler import handle_twilio_media 
+
+# Assuming these exist and work, keep them
+from services.twilio_service import initiate_call 
+from utils.google_credentials import setup_google_credentials_from_env 
+
+# Configure logging for maximum verbosity to capture all details
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 setup_google_credentials_from_env()
 
@@ -138,6 +142,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- SIMPLIFIED handle_twilio_media FOR DEBUGGING WEBSOCKET CONNECTION ---
+# This version will help us isolate if the issue is with the initial WebSocket handshake
+# or something in your Gemini integration.
+async def handle_twilio_media(websocket: WebSocket):
+    logging.debug("🎧 [DEBUG] handle_twilio_media: Function entered (simplified version).")
+    try:
+        # Keep the connection open indefinitely, or until Twilio sends a stop
+        async for message in websocket.iter_json():
+            event_type = message.get("event")
+            sequence_number = message.get("sequenceNumber")
+            logging.info(f"[DEBUG] Received Twilio event: {event_type} (Seq: {sequence_number})")
+
+            if event_type == "start":
+                logging.info("🔗 [DEBUG] Twilio stream 'start' event received. Sending mark.")
+                await websocket.send_text(json.dumps({
+                    "event": "mark",
+                    "mark": {"name": "server_ready_debug"}
+                }))
+                logging.info("[DEBUG] Sent 'mark' event to Twilio: server_ready_debug")
+            elif event_type == "media":
+                # Just log, don't process audio to rule out processing errors
+                # logging.debug(f"[DEBUG] Received media payload (first 50 chars): {message.get('media', {}).get('payload', '')[:50]}")
+                pass # Do nothing with media for now
+            elif event_type == "stop":
+                logging.info("⛔ [DEBUG] Twilio stream 'stop' event received. Closing connection.")
+                break # Exit the loop
+            elif event_type == "mark":
+                logging.info(f"✅ [DEBUG] Twilio acknowledged mark: {message.get('mark', {}).get('name')}")
+            elif event_type == "error":
+                logging.error(f"❌ [DEBUG] Twilio stream 'error' event received: {message.get('error', {}).get('message')}")
+                break
+            else:
+                logging.warning(f"❓ [DEBUG] Unknown Twilio event type received: {event_type}")
+
+    except asyncio.CancelledError:
+        logging.info("[DEBUG] WebSocket handling task cancelled.")
+    except Exception as e:
+        logging.error(f"❌ [DEBUG] Critical error during simplified WebSocket handling: {e}", exc_info=True)
+        if websocket.client_state == 1: # WebSocketState.CONNECTED
+            await websocket.close(code=1011) # Internal Error
+    finally:
+        logging.info("🔗 [DEBUG] Simplified WebSocket handling finished.")
+# --- END SIMPLIFIED handle_twilio_media ---
 
 
 @app.get("/")
@@ -172,14 +220,13 @@ async def voice():
     response.say("Connecting you to the car service assistant.", voice="Polly.Joanna")
 
     # **************************************************************************
-    # *** IMPORTANT: ADD STATUS CALLBACK FOR DEBUGGING ***
-    # *** REPLACE "https://yourserver.com/twilio-callback" ***
-    # *** WITH YOUR ACTUAL PUBLIC URL ON RAILWAY FOR THIS CALLBACK ***
+    # *** IMPORTANT: STATUS CALLBACK IS CRITICAL FOR DEBUGGING ***
+    # *** Using your provided Railway URL for status_callback ***
     # **************************************************************************
     stream = Start().stream(
         url="wss://testcarbooking-env.up.railway.app/twilio-audio",
         track="inbound_track",
-        status_callback="https://testcarbooking-env.up.railway.app/twilio-callback", # <--- REPLACE THIS
+        status_callback="https://testcarbooking-env.up.railway.app/twilio-callback", # YOUR RAILWAY URL HERE
         status_callback_event="start error end" # Twilio will send POST requests for these events
     )
     logging.info("➡️ Adding Stream tag to TwiML with statusCallback.")
@@ -194,16 +241,21 @@ async def voice():
 # ✅ WebSocket route for real-time audio from Twilio
 @app.websocket("/twilio-audio")
 async def twilio_audio_stream(websocket: WebSocket):
-    logging.info("🎧 Incoming WebSocket connection request to /twilio-audio")
+    # Log immediately when the function is entered
+    logging.info("🎧 [VERY EARLY DEBUG] Incoming WebSocket connection request to /twilio-audio endpoint.")
     try:
+        # Log before accepting the connection
+        logging.info("Attempting to accept WebSocket connection...")
         await websocket.accept()
-        logging.info("✅ WebSocket connection accepted for /twilio-audio")
-        # Call your actual handle_twilio_media from services.media_stream_handler
-        await handle_twilio_media(websocket)
+        # Log after successfully accepting
+        logging.info("✅ WebSocket connection accepted for /twilio-audio.")
+        # Call the simplified handle_twilio_media defined above for debugging connection issues
+        await handle_twilio_media(websocket) 
     except Exception as e:
+        # Log any exception during the connection or handling
         logging.error(f"❌ WebSocket connection error in /twilio-audio endpoint: {e}", exc_info=True)
     finally:
-        logging.info("🔗 WebSocket connection handler finished for /twilio-audio")
+        logging.info("🔗 WebSocket connection handler finished for /twilio-audio.")
 
 
 # ✅ Route: Twilio status callback for Media Streams
@@ -231,6 +283,4 @@ async def twilio_callback(request: Request):
 
 # Run the FastAPI app
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000)
-
-
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, log_level="debug") # Set Uvicorn's log_level to debug
