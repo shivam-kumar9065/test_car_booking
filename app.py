@@ -39,16 +39,27 @@ async def voice():
         url="wss://testcarbooking-env.up.railway.app/twilio-audio",  # <== use your WebSocket route here
         track="inbound_track"
     )
+    print("Going to websocket")
     response.append(stream)
+    print("Going to websocket__1")
 
     return Response(content=str(response), media_type="application/xml")
 
 
-# ✅ WebSocket route for real-time audio from Twilio
+# # ✅ WebSocket route for real-time audio from Twilio
+# @app.websocket("/twilio-audio")
+# async def twilio_audio_stream(websocket: WebSocket):
+#     await websocket.accept()
+#     await handle_twilio_media(websocket)
 @app.websocket("/twilio-audio")
 async def twilio_audio_stream(websocket: WebSocket):
-    await websocket.accept()
-    await handle_twilio_media(websocket)
+    print("🎧 Incoming WebSocket connection from Twilio")
+    try:
+        await websocket.accept()
+        print("✅ WebSocket accepted")
+        await handle_twilio_media(websocket)
+    except Exception as e:
+        print("❌ WebSocket Error:", e)
 
 # Run the FastAPI app
 if __name__ == "__main__":
