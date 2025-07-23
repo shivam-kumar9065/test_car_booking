@@ -61,9 +61,10 @@ async def voice():
 
     stream = Start().stream(
         url="wss://testcarbooking-env.up.railway.app/twilio-audio",
-        track="inbound_track"
+         track="inbound_track",
+         status_callback="https://testcarbooking-env.up.railway.app/twilio-callback", # YOUR RAILWAY URL HERE
+         status_callback_event="start error end" # Twilio will send POST requests for these events
     )
-    #<Stream track="inbound_track" url="wss://testcarbooking-env.up.railway.app/twilio-audio" statusCallbackEvent="start error end" statusCallback="https://yourserver.com/twilio-callback" />
     print("➡️ Adding Stream tag")
     response.append(stream)
 
@@ -71,6 +72,28 @@ async def voice():
     print("🛰️ XML sent to Twilio:\n", xml_str)
 
     return Response(content=xml_str, media_type="application/xml")
+
+# ✅ Route: Twilio status callback for Media Streams
+@app.post("/twilio-callback")
+async def twilio_callback(request: Request):
+    form_data = await request.form()
+    logging.info("🔔 Received Twilio Status Callback!")
+    logging.info("Callback Data: %s", dict(form_data))
+    
+    stream_status = form_data.get("StreamStatus")
+    if stream_status == "error":
+        error_code = form_data.get("ErrorCode")
+        error_message = form_data.get("ErrorMessage")
+        logging.error(f"❌ Twilio Stream Error: Code={error_code}, Message={error_message}")
+        # THIS IS THE ERROR MESSAGE YOU NEED TO SEE!
+    elif stream_status == "started":
+        logging.info("✅ Twilio Stream reported as STARTED.")
+    elif stream_status == "stopped":
+        logging.info("🛑 Twilio Stream reported as STOPPED.")
+    else:
+        logging.info(f"ℹ️ Twilio Stream status: {stream_status}")
+
+    return Response(content="", media_type="text/plain")
 
 
 
