@@ -2,6 +2,7 @@
 
 import uvicorn
 import os
+import logging
 from fastapi import FastAPI, WebSocket, Request
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
