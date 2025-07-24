@@ -61,11 +61,15 @@ async def voice():
     response = VoiceResponse()
     response.say("Connecting you to the car service assistant.", voice="Polly.Joanna")
 
+    # Define the URLs explicitly and strip any potential whitespace
+    websocket_url = "wss://testcarbooking-env.up.railway.app/twilio-audio"
+    callback_url = "https://testcarbooking-env.up.railway.app/twilio-callback"
+
     stream = Start().stream(
-        url="wss://testcarbooking-env.up.railway.app/twilio-audio",
-         track="inbound_track",
-         status_callback="https://testcarbooking-env.up.railway.app/twilio-callback", # YOUR RAILWAY URL HERE
-         status_callback_event="start error end" # Twilio will send POST requests for these events
+        url=websocket_url.strip(),  # Strip whitespace from WebSocket URL
+        track="inbound_track",
+        status_callback=callback_url.strip(),  # Strip whitespace from callback URL
+        status_callback_event="start error end"
     )
     print("➡️ Adding Stream tag")
     response.append(stream)
